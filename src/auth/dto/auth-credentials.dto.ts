@@ -1,12 +1,37 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  MinLength,
+  IsOptional,
+} from 'class-validator';
 
-export class AuthCredentialsDto {
+export class LoginCredentialDto {
+  @Expose()
   @IsString()
-  @MinLength(4)
-  @MaxLength(20)
-  username: string;
+  @IsNotEmpty()
+  @ApiProperty()
+  readonly username: string;
+
+  @Expose()
   @IsString()
-  @MinLength(4)
-  @MaxLength(20)
-  password: string;
+  @IsNotEmpty()
+  @ApiProperty()
+  readonly password: string;
+}
+export class AuthCredentialsDto extends LoginCredentialDto {
+  @Expose()
+  @IsEmail()
+  @IsNotEmpty()
+  @ApiProperty()
+  readonly email: string;
+
+  @Expose()
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  readonly fullname?: string;
 }

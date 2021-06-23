@@ -7,26 +7,38 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AuthGuard } from '@nestjs/passport';
-@Controller('auth')
+import { ApiTags } from '@nestjs/swagger';
+import {
+  LoginCredentialDto,
+  AuthCredentialsDto,
+} from './dto/auth-credentials.dto';
+import { ForgotReqDto } from './dto/forgot.dto';
+import { ResetReqDto } from './dto/reset.dto';
+@ApiTags('Auth')
+@Controller('/api')
 export class AuthController {
-  constructor(private AuthService: AuthService) {}
+  constructor(private authService: AuthService) {}
+
   @Post('/signUp')
-  signUp(
-    @Body(ValidationPipe) AuthCredentialsDto: AuthCredentialsDto,
-  ): Promise<void> {
-    return this.AuthService.signUp(AuthCredentialsDto);
+  signUp(@Body(ValidationPipe) AuthCredentialsDto: AuthCredentialsDto) {
+    return this.authService.signUp(AuthCredentialsDto);
   }
+
   @Post('/signIn')
   signIn(
-    @Body(ValidationPipe) AuthCredentialsDto: AuthCredentialsDto,
+    @Body(ValidationPipe) loginCredentialDto: LoginCredentialDto,
   ): Promise<{ accessToken: string }> {
-    return this.AuthService.signIn(AuthCredentialsDto);
+    return this.authService.signIn(loginCredentialDto);
   }
-  @Post('/test')
-  @UseGuards(AuthGuard())
-  test(@Req() req) {
-    console.log('req', req);
+
+  @Post('/auth/forgotpassword')
+  async forgot(@Body() forgotForm: ForgotReqDto) {
+    return this.authService.forgotUser(forgotForm);
+  }
+
+  @Post('/aut/renewpassword')
+  async renewPassword(@Body() resetForm: ResetReqDto) {
+    return this.authService.renewPassword(resetForm);
   }
 }
