@@ -4,21 +4,30 @@ import {
 } from './../auth/dto/auth-credentials.dto';
 
 import { Repository, EntityRepository, MoreThanOrEqual } from 'typeorm';
-import { User } from './user.entity';
 import {
   ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
+import { User } from './user.entity';
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
   async signUp(authCredentialsDto: AuthCredentialsDto) {
     try {
       const userTest = this.create(authCredentialsDto);
+
       return await this.save(userTest);
+
+      // console.log('12312');
+
+      // return '12312';
     } catch (error) {
-      if (error.code == 23505) {
+      console.log(
+        '🚀 ~ file: user.repository.ts ~ line 22 ~ UserRepository ~ signUp ~ error',
+        error,
+      );
+      if (error.err_no == 1062) {
         throw new ConflictException('Usename or email existed');
       } else {
         throw new InternalServerErrorException();

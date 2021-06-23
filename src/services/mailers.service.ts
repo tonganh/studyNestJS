@@ -4,8 +4,8 @@ import * as sgMail from '@sendgrid/mail';
 sgMail.setApiKey(
   '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',
 );
-import * as ejs from 'ejs';
 import * as path from 'path';
+import * as ejs from 'ejs';
 @Injectable()
 export class MailerService {
   private smptp;

@@ -1,14 +1,9 @@
+import { DTOBase } from './../common/base/dtobase';
+import { ApiSignInResDto } from './../users/dto/signin-user.dto';
+import { ApiCreateUsertResDto } from './../users/dto/create-user.dto';
 import { AuthService } from './auth.service';
-import {
-  Body,
-  Controller,
-  Post,
-  Req,
-  UseGuards,
-  ValidationPipe,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { ApiTags, ApiCreatedResponse } from '@nestjs/swagger';
 import {
   LoginCredentialDto,
   AuthCredentialsDto,
@@ -21,24 +16,40 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/signUp')
+  @ApiCreatedResponse({
+    description: 'The record has been successfully created.',
+    type: ApiCreateUsertResDto,
+  })
   signUp(@Body(ValidationPipe) AuthCredentialsDto: AuthCredentialsDto) {
     return this.authService.signUp(AuthCredentialsDto);
   }
 
   @Post('/signIn')
+  @ApiCreatedResponse({
+    description: 'Login successfull',
+    type: ApiSignInResDto,
+  })
   signIn(
     @Body(ValidationPipe) loginCredentialDto: LoginCredentialDto,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<ApiSignInResDto> {
     return this.authService.signIn(loginCredentialDto);
   }
 
   @Post('/auth/forgotpassword')
-  async forgot(@Body() forgotForm: ForgotReqDto) {
+  @ApiCreatedResponse({
+    description: 'Send token to email, do next step to reset password',
+    type: DTOBase,
+  })
+  async forgot(@Body() forgotForm: ForgotReqDto): Promise<DTOBase> {
     return this.authService.forgotUser(forgotForm);
   }
 
   @Post('/aut/renewpassword')
-  async renewPassword(@Body() resetForm: ResetReqDto) {
+  @ApiCreatedResponse({
+    description: 'Reset password successfull5',
+    type: DTOBase,
+  })
+  async renewPassword(@Body() resetForm: ResetReqDto): Promise<DTOBase> {
     return this.authService.renewPassword(resetForm);
   }
 }
