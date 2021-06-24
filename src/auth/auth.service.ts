@@ -17,6 +17,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRepository } from '../users/user.repository';
@@ -47,50 +48,65 @@ export class AuthService {
     }
   }
 
-  async signUp(authCredentialsDto: AuthCredentialsDto) {
-    await this.userRepository.signUp(authCredentialsDto);
-    return {
-      status: 200,
-      message: 'The record has been successfully created.',
-    };
+  async signUp(authCredentialsDto: AuthCredentialsDto): Promise<DTOBase> {
+    try {
+      await this.userRepository.signUp(authCredentialsDto);
+      return {
+        status: 200,
+        message: 'The record has been successfully created.',
+      };
+    } catch (error) {
+      if (error.code == 23505) {
+        throw new ConflictException('Usename or email existed');
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
-  async signIn(
-    loginCredentialDto: LoginCredentialDto,
-  ): Promise<ApiSignInResDto> {
-    const username = await this.userRepository.validateUserPassword(
-      loginCredentialDto,
-    );
+  async signIn(loginCredentialDto: LoginCredentialDto) {
+    try {
+      const username = await this.userRepository.validateUserPassword(
+        loginCredentialDto,
+      );
 
-    if (!username) {
-      throw new UnauthorizedException('Invalid credential');
+      if (!username) {
+        throw new UnauthorizedException('Invalid credential');
+      }
+
+      const payload: JwtPayload = { username };
+      const accessToken = this.jwtService.sign(payload);
+      return {
+        status: 201,
+        accessToken,
+      };
+    } catch (error) {
+      return {
+        status: 401,
+        message: 'Wrong username or password',
+      };
     }
-
-    const payload: JwtPayload = { username };
-    const accessToken = this.jwtService.sign(payload);
-    return {
-      status: 201,
-      accessToken,
-    };
   }
 
   async forgotUser(forgotForm: ForgotReqDto): Promise<DTOBase> {
-    const user = await this.userRepository.findOne({ email: forgotForm.email });
-    if (!user) {
-      throw new NotFoundException('Tài khoản chưa tồn tại');
-    }
-
-    await user.generateResetToken();
-
     try {
+      const user = await this.userRepository.findOne({
+        email: forgotForm.email,
+      });
+      if (!user) {
+        throw { message: 'Email not exist' };
+      }
+      await user.generateResetToken();
       await this.mailService.sendMailResetPassword(user);
+      return {
+        status: 201,
+        message: 'Check your email and do next step',
+      };
     } catch (error) {
-      console.error(error);
+      return {
+        status: 401,
+        message: error.message,
+      };
     }
-    return {
-      status: 201,
-      message: 'Check your email and do next step',
-    };
   }
 
   async renewPassword(resetForm: ResetReqDto): Promise<DTOBase> {
@@ -112,5 +128,9 @@ export class AuthService {
       status: 201,
       message: 'Renew password successfull',
     };
+  }
+
+  async findAll() {
+    return await this.userRepository.find();
   }
 }

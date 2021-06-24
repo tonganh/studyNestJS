@@ -2,7 +2,7 @@ import { DTOBase } from './../common/base/dtobase';
 import { ApiSignInResDto } from './../users/dto/signin-user.dto';
 import { ApiCreateUsertResDto } from './../users/dto/create-user.dto';
 import { AuthService } from './auth.service';
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiCreatedResponse } from '@nestjs/swagger';
 import {
   LoginCredentialDto,
@@ -29,9 +29,7 @@ export class AuthController {
     description: 'Login successfull',
     type: ApiSignInResDto,
   })
-  signIn(
-    @Body(ValidationPipe) loginCredentialDto: LoginCredentialDto,
-  ): Promise<ApiSignInResDto> {
+  signIn(@Body(ValidationPipe) loginCredentialDto: LoginCredentialDto) {
     return this.authService.signIn(loginCredentialDto);
   }
 
@@ -44,12 +42,17 @@ export class AuthController {
     return this.authService.forgotUser(forgotForm);
   }
 
-  @Post('/aut/renewpassword')
+  @Post('/auth/renewpassword')
   @ApiCreatedResponse({
     description: 'Reset password successfull5',
     type: DTOBase,
   })
   async renewPassword(@Body() resetForm: ResetReqDto): Promise<DTOBase> {
     return this.authService.renewPassword(resetForm);
+  }
+
+  @Post('/findall')
+  async findAll() {
+    return this.authService.findAll();
   }
 }

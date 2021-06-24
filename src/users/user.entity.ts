@@ -1,6 +1,4 @@
 import { TYPEORM_ERROR_DUPLICATE_CODE } from '../common/constant';
-import { AuthCredentialsDto } from './../auth/dto/auth-credentials.dto';
-import { UserRepository } from './user.repository';
 import { Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
@@ -9,7 +7,9 @@ import {
   Column,
   Entity,
   getConnectionManager,
+  Index,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import moment = require('moment');
@@ -17,13 +17,13 @@ import moment = require('moment');
 @Entity({
   name: 'users',
 })
-// @Unique('usernameAndEmail', ['username, email'])
+@Unique(['username'])
+@Unique(['email'])
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @ApiProperty()
-  @Expose()
   @Column({
     type: 'varchar',
     length: 100,
@@ -31,7 +31,6 @@ export class User extends BaseEntity {
   email: string;
 
   @ApiProperty()
-  @Expose()
   @Column({
     type: 'varchar',
     length: 100,
@@ -45,7 +44,6 @@ export class User extends BaseEntity {
   @ApiProperty({
     type: 'string',
   })
-  @ApiProperty()
   @Column({
     type: 'varchar',
     length: 200,
@@ -62,37 +60,25 @@ export class User extends BaseEntity {
   })
   resetTokenExpire: Date;
 
+  @ApiProperty({
+    type: 'string',
+  })
+  @Column({
+    type: 'varchar',
+    length: 200,
+    nullable: true,
+  })
+  fullname: string;
+
+  @Column({
+    nullable: true,
+  })
+  age: number;
+
   @BeforeInsert()
   hashPassword() {
     const salt = bcrypt.genSaltSync(10);
     this.password = bcrypt.hashSync(this.password, salt);
-  }
-
-  @BeforeInsert()
-  async checkEmailAndUserName() {
-    const userRepo = getConnectionManager().get().getRepository('users');
-
-    const user = await userRepo.find({
-      where: [
-        {
-          email: this.email,
-        },
-        {
-          username: this.username,
-        },
-      ],
-    });
-
-    console.log(
-      '🚀 ~ file: user.entity.ts ~ line 75 ~ User ~ checkEmailAndUserName ~ user',
-      user,
-    );
-
-    if (user.length !== 0) {
-      throw {
-        err_no: TYPEORM_ERROR_DUPLICATE_CODE,
-      };
-    }
   }
 
   async generateResetToken() {
