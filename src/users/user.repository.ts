@@ -1,17 +1,16 @@
 import {
-  AuthCredentialsDto,
   LoginCredentialDto,
+  CreateUserReqDto,
 } from './../auth/dto/auth-credentials.dto';
 
 import { Repository, EntityRepository, MoreThanOrEqual } from 'typeorm';
-import { ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
 import { User } from './user.entity';
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
-  async signUp(authCredentialsDto: AuthCredentialsDto) {
-    const userTest = this.create(authCredentialsDto);
+  async signUp(createUserReqDto: CreateUserReqDto) {
+    const userTest = this.create(createUserReqDto);
     return await this.save(userTest);
   }
   async validateUserPassword(
@@ -20,17 +19,13 @@ export class UserRepository extends Repository<User> {
     const { username, password } = loginCredentialDto;
     const user = await this.findOne({ username });
     if (!user) {
-      throw {
-        code: 2,
-      };
+      return null;
     }
     const isMatch = bcrypt.compareSync(password, user.password);
     if (isMatch) {
       return user.username;
     } else {
-      throw {
-        code: 3,
-      };
+      return null;
     }
   }
 

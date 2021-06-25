@@ -1,13 +1,9 @@
-import { ApiSignInResDto } from './../users/dto/signin-user.dto';
 import { MailerService } from './../services/mailers.service';
 import { DTOBase } from './../common/base/dtobase';
-import {
-  TYPEORM_ERROR_DUPLICATE_CODE_TELEPHONE,
-  TYPEORM_ERROR_DUPLICATE_CODE_EMAIL,
-} from './../common/constant/index';
+import { TYPEORM_ERROR_DUPLICATE_CODE_EMAIL } from './../common/constant/index';
 import { ForgotReqDto } from './dto/forgot.dto';
 import {
-  AuthCredentialsDto,
+  CreateUserReqDto,
   LoginCredentialDto,
 } from './dto/auth-credentials.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -48,9 +44,10 @@ export class AuthService {
     }
   }
 
-  async signUp(authCredentialsDto: AuthCredentialsDto): Promise<DTOBase> {
+  async signUp(createUserReqDto: CreateUserReqDto): Promise<DTOBase> {
     try {
-      await this.userRepository.signUp(authCredentialsDto);
+      const user = await this.userRepository.signUp(createUserReqDto);
+
       return {
         status: 200,
         message: 'The record has been successfully created.',
@@ -64,49 +61,33 @@ export class AuthService {
   }
 
   async signIn(loginCredentialDto: LoginCredentialDto) {
-    try {
-      const username = await this.userRepository.validateUserPassword(
-        loginCredentialDto,
+    const username = await this.userRepository.validateUserPassword(
+      loginCredentialDto,
+    );
+    if (!username) {
+      throw new UnauthorizedException(
+        'Tài khoản bạn vừa nhập không chính xác.',
       );
-
-      if (!username) {
-        throw new UnauthorizedException('Invalid credential');
-      }
-
-      const payload: JwtPayload = { username };
-      const accessToken = this.jwtService.sign(payload);
-      return {
-        status: 201,
-        accessToken,
-      };
-    } catch (error) {
-      return {
-        status: 401,
-        message: 'Wrong username or password',
-      };
     }
+    const payload: JwtPayload = { username };
+    const accessToken = this.jwtService.sign(payload);
+    return {
+      accessToken,
+    };
   }
 
-  async forgotUser(forgotForm: ForgotReqDto): Promise<DTOBase> {
-    try {
-      const user = await this.userRepository.findOne({
-        email: forgotForm.email,
-      });
-      if (!user) {
-        throw { message: 'Email not exist' };
-      }
-      await user.generateResetToken();
-      await this.mailService.sendMailResetPassword(user);
-      return {
-        status: 201,
-        message: 'Check your email and do next step',
-      };
-    } catch (error) {
-      return {
-        status: 401,
-        message: error.message,
-      };
+  async forgotUser(forgotForm: ForgotReqDto) {
+    const user = await this.userRepository.findOne({
+      email: forgotForm.email,
+    });
+    if (!user) {
+      throw new NotFoundException('Email không tồn tại trong hệ thống.');
     }
+    await user.generateResetToken();
+    await this.mailService.sendMailResetPassword(user);
+    return {
+      message: 'Check your email and do next step',
+    };
   }
 
   async renewPassword(resetForm: ResetReqDto): Promise<DTOBase> {
@@ -130,7 +111,5 @@ export class AuthService {
     };
   }
 
-  async findAll() {
-    return await this.userRepository.find();
-  }
+  // async
 }

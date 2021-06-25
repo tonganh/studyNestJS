@@ -1,14 +1,11 @@
-import { TYPEORM_ERROR_DUPLICATE_CODE } from '../common/constant';
-import { Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   BaseEntity,
   BeforeInsert,
   Column,
   Entity,
-  getConnectionManager,
-  Index,
   PrimaryGeneratedColumn,
+  TableInheritance,
   Unique,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -19,6 +16,7 @@ import moment = require('moment');
 })
 @Unique(['username'])
 @Unique(['email'])
+@TableInheritance({ column: { type: 'varchar', name: 'role', select: true } })
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;

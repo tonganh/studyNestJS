@@ -3,3 +3,9 @@ export enum SexType {
   FEMALE = 'F',
   ALL = 'FM',
 }
+
+export enum Role {
+  Admin = 'Admin',
+  Student = 'Student',
+  Lecture = 'Lecture',
+}

@@ -1,14 +1,21 @@
+import { LoginResDto } from './dto/login.dto';
+import { TransformInterceptor } from './../common/interceptor/transform.interceptor';
 import { DTOBase } from './../common/base/dtobase';
-import { ApiSignInResDto } from './../users/dto/signin-user.dto';
 import { ApiCreateUsertResDto } from './../users/dto/create-user.dto';
 import { AuthService } from './auth.service';
-import { Body, Controller, Get, Post, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UseInterceptors,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiCreatedResponse } from '@nestjs/swagger';
 import {
   LoginCredentialDto,
-  AuthCredentialsDto,
+  CreateUserReqDto,
 } from './dto/auth-credentials.dto';
-import { ForgotReqDto } from './dto/forgot.dto';
+import { ForgotReqDto, ForgotResDto } from './dto/forgot.dto';
 import { ResetReqDto } from './dto/reset.dto';
 @ApiTags('Auth')
 @Controller('/api')
@@ -20,17 +27,19 @@ export class AuthController {
     description: 'The record has been successfully created.',
     type: ApiCreateUsertResDto,
   })
-  signUp(@Body(ValidationPipe) AuthCredentialsDto: AuthCredentialsDto) {
-    return this.authService.signUp(AuthCredentialsDto);
+  signUp(@Body(ValidationPipe) createUserReqDto: CreateUserReqDto) {
+    return this.authService.signUp(createUserReqDto);
   }
 
   @Post('/signIn')
   @ApiCreatedResponse({
     description: 'Login successfull',
-    type: ApiSignInResDto,
+    type: CreateUserReqDto,
   })
-  signIn(@Body(ValidationPipe) loginCredentialDto: LoginCredentialDto) {
-    return this.authService.signIn(loginCredentialDto);
+  @UseInterceptors(new TransformInterceptor(LoginResDto))
+  async signIn(@Body(ValidationPipe) loginCredentialDto: LoginCredentialDto) {
+    const res = await this.authService.signIn(loginCredentialDto);
+    return res;
   }
 
   @Post('/auth/forgotpassword')
@@ -38,7 +47,8 @@ export class AuthController {
     description: 'Send token to email, do next step to reset password',
     type: DTOBase,
   })
-  async forgot(@Body() forgotForm: ForgotReqDto): Promise<DTOBase> {
+  @UseInterceptors(new TransformInterceptor(ForgotResDto))
+  async forgot(@Body() forgotForm: ForgotReqDto) {
     return this.authService.forgotUser(forgotForm);
   }
 
@@ -49,10 +59,5 @@ export class AuthController {
   })
   async renewPassword(@Body() resetForm: ResetReqDto): Promise<DTOBase> {
     return this.authService.renewPassword(resetForm);
-  }
-
-  @Post('/findall')
-  async findAll() {
-    return this.authService.findAll();
   }
 }

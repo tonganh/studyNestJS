@@ -1,7 +1,5 @@
 import { DTOBase } from './../common/base/dtobase';
 import { mockedUser } from '../users/user.mock';
-import { User } from './../users/user.entity';
-import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { JwtModule } from '@nestjs/jwt';
 import { ServiceModule } from './../services/services.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -16,19 +14,19 @@ import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 
 describe('AuthController test', () => {
-  let authController: AuthController;
-  let authService: AuthService;
-  let userData;
+  // let authController: AuthController;
+  // let authService: AuthService;
+  // let userData;
   let app: INestApplication;
 
   beforeEach(async () => {
-    userData = {
-      ...mockedUser,
-    };
-    const userRepository = {
-      create: jest.fn().mockResolvedValue(userData),
-      save: jest.fn().mockReturnValue(Promise.resolve()),
-    };
+    // userData = {
+    //   ...mockedUser,
+    // };
+    // const userRepository = {
+    //   create: jest.fn().mockResolvedValue(userData),
+    //   save: jest.fn().mockReturnValue(Promise.resolve()),
+    // };
     const module = await Test.createTestingModule({
       imports: [
         PassportModule.register({ defaultStrategy: 'jwt' }),
@@ -46,8 +44,8 @@ describe('AuthController test', () => {
       providers: [AuthService, JwtStrategy],
     }).compile();
 
-    authController = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
+    // authController = module.get<AuthController>(AuthController);
+    // authService = module.get<AuthService>(AuthService);
 
     app = module.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
@@ -55,21 +53,21 @@ describe('AuthController test', () => {
   });
 
   describe('When registering', () => {
-    describe('And using valid data', () => {
-      it('Should return status 200 and message: The record has been successfully created. ', () => {
-        const result: DTOBase = {
-          message: 'The record has been successfully created.',
-          status: 200,
-        };
+    // describe('And using valid data', () => {
+    //   it('Should return status 200 and message: The record has been successfully created. ', () => {
+    //     const result: DTOBase = {
+    //       message: 'The record has been successfully created.',
+    //       status: 200,
+    //     };
 
-        return request(app.getHttpServer())
-          .post('/api/signUp')
-          .send({
-            ...mockedUser,
-          })
-          .expect(result);
-      });
-    });
+    //     return request(app.getHttpServer())
+    //       .post('/api/signUp')
+    //       .send({
+    //         ...mockedUser,
+    //       })
+    //       .expect(result);
+    //   });
+    // });
 
     describe('And when using invalid data', () => {
       describe('Using and email and username existed in DB', () => {
@@ -129,21 +127,23 @@ describe('AuthController test', () => {
 
   describe('When login', () => {
     describe('Using valid account', () => {
-      it('Shoud return status 201 and accesstoken ', async () => {
+      it('Shoud return status 200 and accesstoken ', async () => {
         const response = await request(app.getHttpServer())
           .post('/api/signIn')
           .send({
             username: mockedUser.username,
             password: mockedUser.password,
           });
-        expect(response.status).toBe(201);
+
+        expect(response.body.status).toBe(200);
       });
     });
 
     describe('Using invalid account', () => {
       const responseInvalid = {
-        status: 401,
-        message: 'Wrong username or password',
+        statusCode: 401,
+        message: 'Tài khoản bạn vừa nhập không chính xác.',
+        error: 'Unauthorized',
       };
       describe('Wrong username', () => {
         it('Should response status 401 and message: wrong username or password', async () => {
@@ -173,26 +173,36 @@ describe('AuthController test', () => {
 
   describe('Using  API forgot password', () => {
     describe('Using right email, and registed in DB', () => {
+      const resultExpected = {
+        status: 200,
+        data: {
+          message: 'Check your email and do next step',
+        },
+      };
       it('Should  have status 201', async () => {
-        const data = await request(app.getHttpServer())
+        return request(app.getHttpServer())
           .post('/api/auth/forgotpassword')
           .send({
             email: mockedUser.email,
-          });
-
-        expect(data.status).toBe(201);
+          })
+          .expect(resultExpected);
       });
     });
 
     describe('Using Wrong email, and registed in DB', () => {
       it('Should  have status 401', async () => {
-        const data = await request(app.getHttpServer())
+        const resultExpected = {
+          statusCode: 404,
+          message: 'Email không tồn tại trong hệ thống.',
+          error: 'Not Found',
+        };
+
+        return request(app.getHttpServer())
           .post('/api/auth/forgotpassword')
           .send({
             email: 'tongngocanhcampha123@gmail.com',
-          });
-
-        expect(data.body.status).toBe(401);
+          })
+          .expect(resultExpected);
       });
     });
   });
